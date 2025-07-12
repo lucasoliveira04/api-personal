@@ -24,5 +24,4 @@ def get_connection() -> bool:
         conn.close()
         return True
     except Exception as e:
-        print(f"Erro de conexão: {e}")
         return False
