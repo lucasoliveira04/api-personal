@@ -42,3 +42,15 @@ class ProfileServices:
         self.session.close()
         return False
     
+    def delete_profile(self, user_id: str) -> bool:
+        profile = self.session.query(ProfileEntity).filter(ProfileEntity.user_id == user_id).first()
+
+        if profile:
+            self.session.delete(profile)
+            self.session.commit()
+            self.session.close()
+            return True
+        
+        self.session.close()
+        return False
+    
