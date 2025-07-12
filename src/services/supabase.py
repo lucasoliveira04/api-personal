@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import psycopg2
+from sqlalchemy import text
 
 load_dotenv()
 
