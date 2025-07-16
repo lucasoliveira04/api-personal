@@ -16,3 +16,12 @@ class ProfileEntity(Base):
 
     def __repr__(self):
         return f"<ProfileEntity(user_id={self.user_id}, name='{self.name}', role='{self.role}', createdAt={self.createdAt})>"
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'name': self.name,
+            'role': self.role,
+            'createdAt': self.createdAt.isoformat() if self.createdAt else None
+        }

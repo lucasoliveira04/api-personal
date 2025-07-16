@@ -1,77 +1,55 @@
+import os
+import sys
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from flask import Blueprint, jsonify, request
-from services.profile.ProfileServices import ProfileServices
+from services.profile_services import ProfileServices
+from model.Profile import ProfileEntity
 
 profile_controller = Blueprint('profile_controller', __name__)
 
+profile_services = ProfileServices()
+
+@profile_controller.route('/get/profiles/<int:profile_id>', methods=['GET'])
+def get_profile(profile_id: int):
+    profile = profile_services.get_profile_by_id(profile_id)
+    if profile:
+        return jsonify(profile.to_dict()), 200
+    return jsonify({'error': 'Profile not found'}), 404
+
 @profile_controller.route('/post/create/profile', methods=['POST'])
-def register_profile():
-    profile_data = request.json
-    profile = {
-        "name": profile_data.get("name"),
-        "role": profile_data.get("role", "admin") 
+def create_profile():
+    data = request.json
+    
+    body = {
+        'name': data.get('name'),
+        'role': data.get('role')
     }
+     
 
-    profile_service = ProfileServices()
-    profile_entity = profile_service.insert_profile(profile)
+    if not body.get('name'):
+        return jsonify({'error': 'Name is required'}), 400
     
-    return jsonify({
-        "user_id": profile_entity.user_id,
-        "name": profile_entity.name,
-        "role": profile_entity.role,
-        "createdAt": profile_entity.createdAt.isoformat()
-    }), 201
+    profile = profile_services.save_profile(ProfileEntity(**body))
+    return jsonify(profile.to_dict()), 201
 
+@profile_controller.route('/delete/profile/<int:profile_id>', methods=['DELETE'])
+def delete_profile(profile_id: int):
+    isDeleted = profile_services.delete_profile(profile_id)
+    if isDeleted:
+        return jsonify({'message': 'Profile deleted successfully'}), 200
+    return jsonify({'error': 'Profile not found'}), 404
 
-@profile_controller.route('/get/profile/<string:user_id>', methods=['GET'])
-def get_profile(user_id):
-    profile_service = ProfileServices()
-    profile_entity = profile_service.get_profile(user_id)
+@profile_controller.route('/post/delete/many/profiles', methods=['POST'])
+def delete_many_profiles():
+    data = request.json
+    ids = data.get('ids', [])
 
-
-    if profile_entity:
-
-        response = jsonify({
-            "user_id": profile_entity.user_id,
-            "name": profile_entity.name,
-            "role": profile_entity.role,
-            "createdAt": profile_entity.createdAt.isoformat()
-        })
-
-        print(f"Profile found: {response.get_json()}")
-
-        return response, 200
+    if not ids:
+        return jsonify({'error': 'No IDs provided'}), 400
     
-    return jsonify({"error": "Profile not found"}), 404
-
-
-@profile_controller.route('/put/profile/<string:user_id>', methods=['PUT'])
-def update_profile(user_id):
-    profile_data = request.json
-
-    profile = {
-        "name": profile_data.get("name"),
-        "role": profile_data.get("role", "admin") 
-    }
-
-    profile_service = ProfileServices()
-    profile_entity = profile_service.update_profile(user_id, profile)
-
-    if profile_entity:
-        return jsonify({
-            "user_id": profile_entity.user_id,
-            "name": profile_entity.name,
-            "role": profile_entity.role,
-            "createdAt": profile_entity.createdAt.isoformat()
-        }), 200
-    
-    return jsonify({"error": "Profile not found"}), 404
-
-@profile_controller.route('/delete/profile/<string:user_id>', methods=['DELETE'])
-def delete_profile(user_id):
-    profile_service = ProfileServices()
-    success = profile_service.delete_profile(user_id)
-
-    if success:
-        return jsonify({"message": "Profile deleted successfully"}), 200
-    
-    return jsonify({"error": "Profile not found"}), 404
+    isDeleted = profile_services.delete_many_profiles(ids)
+    if isDeleted:
+        return jsonify({'message': 'Profiles deleted successfully'}), 200
+    return jsonify({'error': 'One or more profiles not found'}), 404
